@@ -39,8 +39,10 @@
     {% for video in videos %}
     <div class="col-md-4 col-sm-6 mb-4 video-item" data-title="{{ video.title.lower() }}" data-uploader="{{ video.uploader_name.lower() }}">
         <div class="card video-card h-100">
-            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height: 200px;">
-                <i class="fas fa-play-circle text-white" style="font-size: 3rem;"></i>
+            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center position-relative" style="height: 200px; cursor: pointer;" onclick="window.location.href='{{ url_for('watch_video', video_id=video.id) }}'">
+                <div class="play-overlay">
+                    <i class="fas fa-play-circle text-white" style="font-size: 3rem;"></i>
+                </div>
             </div>
             <div class="card-body">
                 <h5 class="card-title">{{ video.title }}</h5>

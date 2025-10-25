@@ -19,7 +19,8 @@
                             <input type="file" class="form-control d-none" id="videoFile" name="video" accept="video/*" required>
                             <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                             <h5>Kéo thả video vào đây hoặc click để chọn</h5>
-                            <p class="text-muted">Hỗ trợ: MP4, AVI, MOV, MKV, WMV (Tối đa 5MB)</p>
+                            <p class="text-muted">Hỗ trợ: MP4, AVI, MOV, MKV, WMV</p>
+                            <p class="text-warning"><small><i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong> Khuyến nghị file < 5MB để upload ổn định. Nếu file > 5MB mà upload lỗi, hãy chia nhỏ thành nhiều video dưới 5MB!</small></p>
                         </div>
                         <div id="fileInfo" class="mt-2 d-none">
                             <div class="alert alert-info">
@@ -157,25 +158,25 @@ function handleFileSelect() {
             return;
         }
 
-        // Check file size (5MB)
+        // Check file size - warning for large files
         if (file.size > 5 * 1024 * 1024) {
-            showAlert(`❌ File "${file.name}" quá lớn (${formatFileSize(file.size)})! Vui lòng chọn file nhỏ hơn 5MB.`, 'danger');
+            showAlert(`⚠️ File "${file.name}" khá lớn (${formatFileSize(file.size)}). Nếu upload lỗi, hãy chia nhỏ thành nhiều video dưới 5MB!`, 'warning');
             fileInput.value = '';
             return;
+        } else {
+            // Show file info
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('d-none');
+            
+            // Auto-fill title from filename
+            if (!document.getElementById('title').value) {
+                const titleFromFile = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
+                document.getElementById('title').value = titleFromFile;
+            }
+            
+            showAlert(`✅ File "${file.name}" đã được chọn thành công!`, 'success');
         }
-
-        // Show file info
-        document.getElementById('fileName').textContent = file.name;
-        document.getElementById('fileSize').textContent = formatFileSize(file.size);
-        fileInfo.classList.remove('d-none');
-        
-        // Auto-fill title from filename
-        if (!document.getElementById('title').value) {
-            const titleFromFile = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
-            document.getElementById('title').value = titleFromFile;
-        }
-        
-        showAlert(`✅ File "${file.name}" đã được chọn thành công!`, 'success');
     }
 }
 
@@ -256,8 +257,17 @@ uploadForm.addEventListener('submit', async (e) => {
         }
         
     } catch (error) {
-        showAlert(`❌ Lỗi upload: ${error.message}`, 'danger');
+        clearInterval(progressInterval);
         progressContainer.classList.add('d-none');
+        
+        if (error.name === 'AbortError') {
+            showAlert(`⏰ Upload timeout! File có thể quá lớn cho server. Hãy thử chia nhỏ video thành nhiều file dưới 5MB.`, 'danger');
+        } else if (error.message.includes('413') || error.message.includes('large')) {
+            showAlert(`📁 File quá lớn cho server hiện tại. Hãy chia video thành nhiều file nhỏ hơn 5MB và upload riêng lẻ.`, 'danger');
+        } else {
+            showAlert(`❌ Lỗi upload: ${error.message}. Nếu file > 5MB, hãy thử chia nhỏ thành nhiều video.`, 'danger');
+        }
+        
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
     }

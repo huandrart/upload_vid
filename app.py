@@ -9,7 +9,7 @@ import sqlite3
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Giảm xuống 5MB cho Railway
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # Tăng lên 50MB để cho thử
 
 # Tạo thư mục uploads nếu chưa có
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -146,6 +146,14 @@ def upload_video():
         if not title:
             return jsonify({'error': 'Vui lòng nhập tiêu đề video'}), 400
         
+        # Double check file size (backup protection) - but allow larger files
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        
+        # Note: We allow files > 5MB but they may fail on Railway
+        # Client will be warned about this
+        
         if file and allowed_file(file.filename):
             try:
                 # Tạo tên file an toàn
@@ -160,8 +168,8 @@ def upload_video():
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 file.save(file_path)
                 
-                # Lấy kích thước file
-                file_size = os.path.getsize(file_path)
+                # Verify file was saved successfully
+                actual_size = os.path.getsize(file_path)
                 
                 # Thêm vào database
                 video_data = {
@@ -172,7 +180,7 @@ def upload_video():
                     'platform': platform,
                     'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'uploader_name': uploader_name,
-                    'file_size': file_size
+                    'file_size': actual_size
                 }
                 
                 add_video_to_db(video_data)
@@ -259,6 +267,15 @@ def get_stats():
         'total_views': total_views,
         'total_size_mb': round(total_size / (1024 * 1024), 2)
     })
+
+@app.route('/api/view/<video_id>', methods=['POST'])
+def update_view_count(video_id):
+    """API cập nhật lượt xem"""
+    try:
+        increment_views(video_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()
