@@ -140,16 +140,27 @@ fileInput.addEventListener('change', handleFileSelect);
 function handleFileSelect() {
     const file = fileInput.files[0];
     if (file) {
-        // Check file type
-        const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/mkv', 'video/wmv'];
-        if (!allowedTypes.some(type => file.type.includes(type.split('/')[1]))) {
-            showAlert('Định dạng file không được hỗ trợ!', 'danger');
+        console.log('Selected file:', file.name, 'Type:', file.type, 'Size:', file.size);
+        
+        // Check file extension manually
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = fileName.endsWith('.mp4') || 
+                                 fileName.endsWith('.avi') || 
+                                 fileName.endsWith('.mov') || 
+                                 fileName.endsWith('.mkv') || 
+                                 fileName.endsWith('.wmv') ||
+                                 fileName.endsWith('.webm');
+        
+        if (!hasValidExtension) {
+            showAlert(`❌ File "${file.name}" không được hỗ trợ! Chỉ chấp nhận: MP4, AVI, MOV, MKV, WMV, WEBM`, 'danger');
+            fileInput.value = '';
             return;
         }
 
         // Check file size (100MB)
         if (file.size > 100 * 1024 * 1024) {
-            showAlert('File quá lớn! Vui lòng chọn file nhỏ hơn 100MB.', 'danger');
+            showAlert(`❌ File "${file.name}" quá lớn (${formatFileSize(file.size)})! Vui lòng chọn file nhỏ hơn 100MB.`, 'danger');
+            fileInput.value = '';
             return;
         }
 
@@ -163,6 +174,8 @@ function handleFileSelect() {
             const titleFromFile = file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ');
             document.getElementById('title').value = titleFromFile;
         }
+        
+        showAlert(`✅ File "${file.name}" đã được chọn thành công!`, 'success');
     }
 }
 
@@ -191,12 +204,15 @@ uploadForm.addEventListener('submit', async (e) => {
     
     // Validation
     if (!fileInput.files[0]) {
-        showAlert('Vui lòng chọn file video!', 'warning');
+        showAlert('❌ Vui lòng chọn file video trước khi upload!', 'warning');
         return;
     }
     
+    const selectedFile = fileInput.files[0];
+    console.log('Uploading file:', selectedFile.name, 'Size:', selectedFile.size);
+    
     if (!formData.get('title').trim()) {
-        showAlert('Vui lòng nhập tiêu đề!', 'warning');
+        showAlert('❌ Vui lòng nhập tiêu đề cho video!', 'warning');
         return;
     }
     
