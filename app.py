@@ -118,55 +118,59 @@ def upload_page():
 @app.route('/upload', methods=['POST'])
 def upload_video():
     """Xử lý upload video"""
-    if 'video' not in request.files:
-        return jsonify({'error': 'Không có file video nào được chọn'}), 400
-    
-    file = request.files['video']
-    title = request.form.get('title', '').strip()
-    description = request.form.get('description', '').strip()
-    platform = request.form.get('platform', 'Website')
-    uploader_name = request.form.get('uploader_name', 'Anonymous').strip()
-    
-    if file.filename == '':
-        return jsonify({'error': 'Không có file nào được chọn'}), 400
-    
-    if not title:
-        return jsonify({'error': 'Vui lòng nhập tiêu đề video'}), 400
-    
-    if file and allowed_file(file.filename):
-        # Tạo tên file an toàn
-        original_filename = secure_filename(file.filename)
-        file_extension = original_filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+    try:
+        if 'video' not in request.files:
+            return jsonify({'error': 'Không có file video nào được chọn'}), 400
         
-        # Lưu file
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        file.save(file_path)
+        file = request.files['video']
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        platform = request.form.get('platform', 'Website')
+        uploader_name = request.form.get('uploader_name', 'Anonymous').strip()
         
-        # Lấy kích thước file
-        file_size = os.path.getsize(file_path)
+        if file.filename == '':
+            return jsonify({'error': 'Không có file nào được chọn'}), 400
         
-        # Thêm vào database
-        video_data = {
-            'id': str(uuid.uuid4()),
-            'title': title,
-            'description': description,
-            'filename': unique_filename,
-            'platform': platform,
-            'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'uploader_name': uploader_name,
-            'file_size': file_size
-        }
+        if not title:
+            return jsonify({'error': 'Vui lòng nhập tiêu đề video'}), 400
         
-        add_video_to_db(video_data)
+        if file and allowed_file(file.filename):
+            # Tạo tên file an toàn
+            original_filename = secure_filename(file.filename)
+            file_extension = original_filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+            
+            # Lưu file
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(file_path)
+            
+            # Lấy kích thước file
+            file_size = os.path.getsize(file_path)
+            
+            # Thêm vào database
+            video_data = {
+                'id': str(uuid.uuid4()),
+                'title': title,
+                'description': description,
+                'filename': unique_filename,
+                'platform': platform,
+                'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'uploader_name': uploader_name,
+                'file_size': file_size
+            }
+            
+            add_video_to_db(video_data)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Video đã được upload thành công!',
+                'video_id': video_data['id']
+            })
         
-        return jsonify({
-            'success': True,
-            'message': 'Video đã được upload thành công!',
-            'video_id': video_data['id']
-        })
-    
-    return jsonify({'error': 'Định dạng file không được hỗ trợ'}), 400
+        return jsonify({'error': 'Định dạng file không được hỗ trợ'}), 400
+        
+    except Exception as e:
+        return jsonify({'error': f'Lỗi server: {str(e)}'}), 500
 
 @app.route('/video/<video_id>')
 def watch_video(video_id):
