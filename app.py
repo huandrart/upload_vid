@@ -9,7 +9,7 @@ import sqlite3
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Giảm xuống 5MB cho Railway
 
 # Tạo thư mục uploads nếu chưa có
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

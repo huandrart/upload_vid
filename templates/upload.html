@@ -19,7 +19,7 @@
                             <input type="file" class="form-control d-none" id="videoFile" name="video" accept="video/*" required>
                             <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                             <h5>Kéo thả video vào đây hoặc click để chọn</h5>
-                            <p class="text-muted">Hỗ trợ: MP4, AVI, MOV, MKV, WMV (Tối đa 100MB)</p>
+                            <p class="text-muted">Hỗ trợ: MP4, AVI, MOV, MKV, WMV (Tối đa 5MB)</p>
                         </div>
                         <div id="fileInfo" class="mt-2 d-none">
                             <div class="alert alert-info">
@@ -157,9 +157,9 @@ function handleFileSelect() {
             return;
         }
 
-        // Check file size (100MB)
-        if (file.size > 100 * 1024 * 1024) {
-            showAlert(`❌ File "${file.name}" quá lớn (${formatFileSize(file.size)})! Vui lòng chọn file nhỏ hơn 100MB.`, 'danger');
+        // Check file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showAlert(`❌ File "${file.name}" quá lớn (${formatFileSize(file.size)})! Vui lòng chọn file nhỏ hơn 5MB.`, 'danger');
             fileInput.value = '';
             return;
         }
@@ -234,7 +234,8 @@ uploadForm.addEventListener('submit', async (e) => {
         
         const response = await fetch('/upload', {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: AbortSignal.timeout(30000)  // 30 second timeout
         });
         
         clearInterval(progressInterval);
