@@ -18,7 +18,12 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv', 'wmv'}
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    """Kiểm tra file có được phép upload không"""
+    if not filename or '.' not in filename:
+        return False
+    
+    file_extension = filename.rsplit('.', 1)[1].lower()
+    return file_extension in ALLOWED_EXTENSIONS
 
 def init_db():
     """Khởi tạo database"""
@@ -72,27 +77,34 @@ def get_all_videos():
 
 def add_video_to_db(video_data):
     """Thêm video vào database"""
-    conn = sqlite3.connect('video_database.db')
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        INSERT INTO videos (id, title, description, filename, platform, 
-                          upload_date, uploader_name, file_size, views)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        video_data['id'],
-        video_data['title'],
-        video_data['description'],
-        video_data['filename'],
-        video_data['platform'],
-        video_data['upload_date'],
-        video_data['uploader_name'],
-        video_data['file_size'],
-        0
-    ))
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect('video_database.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO videos (id, title, description, filename, platform, 
+                              upload_date, uploader_name, file_size, views)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            video_data['id'],
+            video_data['title'],
+            video_data['description'],
+            video_data['filename'],
+            video_data['platform'],
+            video_data['upload_date'],
+            video_data['uploader_name'],
+            video_data['file_size'],
+            0
+        ))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Database error: {e}")
+        if 'conn' in locals():
+            conn.close()
+        raise e
 
 def increment_views(video_id):
     """Tăng số lượt xem"""
@@ -135,37 +147,46 @@ def upload_video():
             return jsonify({'error': 'Vui lòng nhập tiêu đề video'}), 400
         
         if file and allowed_file(file.filename):
-            # Tạo tên file an toàn
-            original_filename = secure_filename(file.filename)
-            file_extension = original_filename.rsplit('.', 1)[1].lower()
-            unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
-            
-            # Lưu file
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(file_path)
-            
-            # Lấy kích thước file
-            file_size = os.path.getsize(file_path)
-            
-            # Thêm vào database
-            video_data = {
-                'id': str(uuid.uuid4()),
-                'title': title,
-                'description': description,
-                'filename': unique_filename,
-                'platform': platform,
-                'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'uploader_name': uploader_name,
-                'file_size': file_size
-            }
-            
-            add_video_to_db(video_data)
-            
-            return jsonify({
-                'success': True,
-                'message': 'Video đã được upload thành công!',
-                'video_id': video_data['id']
-            })
+            try:
+                # Tạo tên file an toàn
+                original_filename = secure_filename(file.filename)
+                if '.' not in original_filename:
+                    return jsonify({'error': 'File không có extension hợp lệ'}), 400
+                
+                file_extension = original_filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{uuid.uuid4().hex}.{file_extension}"
+                
+                # Lưu file
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                file.save(file_path)
+                
+                # Lấy kích thước file
+                file_size = os.path.getsize(file_path)
+                
+                # Thêm vào database
+                video_data = {
+                    'id': str(uuid.uuid4()),
+                    'title': title,
+                    'description': description,
+                    'filename': unique_filename,
+                    'platform': platform,
+                    'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'uploader_name': uploader_name,
+                    'file_size': file_size
+                }
+                
+                add_video_to_db(video_data)
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Video đã được upload thành công!',
+                    'video_id': video_data['id']
+                })
+            except Exception as e:
+                # Xóa file nếu có lỗi
+                if 'file_path' in locals() and os.path.exists(file_path):
+                    os.remove(file_path)
+                return jsonify({'error': f'Lỗi xử lý file: {str(e)}'}), 500
         
         return jsonify({'error': 'Định dạng file không được hỗ trợ'}), 400
         
