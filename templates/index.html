@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}VideoShare - Trang chủ{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+    <div class="container">
+        <h1 class="display-4">🎬 Chào mừng đến VideoShare</h1>
+        <p class="lead">Nền tảng chia sẻ video miễn phí cho mọi người</p>
+        <a class="btn btn-light btn-lg" href="{{ url_for('upload_page') }}" role="button">
+            <i class="fas fa-upload"></i> Upload Video Ngay
+        </a>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm video...">
+            <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Videos Grid -->
+{% if videos %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-fire"></i> Video mới nhất</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row" id="videosContainer">
+    {% for video in videos %}
+    <div class="col-md-4 col-sm-6 mb-4 video-item" data-title="{{ video.title.lower() }}" data-uploader="{{ video.uploader_name.lower() }}">
+        <div class="card video-card h-100">
+            <div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="fas fa-play-circle text-white" style="font-size: 3rem;"></i>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ video.title }}</h5>
+                <p class="card-text text-muted">
+                    <small>
+                        <i class="fas fa-user"></i> {{ video.uploader_name }}<br>
+                        <i class="fas fa-calendar"></i> {{ video.upload_date }}<br>
+                        <i class="fas fa-eye"></i> {{ video.views }} lượt xem
+                    </small>
+                </p>
+                {% if video.description %}
+                <p class="card-text">{{ video.description[:100] }}{% if video.description|length > 100 %}...{% endif %}</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('watch_video', video_id=video.id) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-play"></i> Xem video
+                </a>
+                <span class="badge bg-secondary">{{ video.platform }}</span>
+                <span class="badge bg-info">{{ "%.1f"|format(video.file_size / (1024*1024)) }} MB</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- No videos message -->
+<div class="text-center py-5">
+    <i class="fas fa-video fa-3x text-muted mb-3"></i>
+    <h3 class="text-muted">Chưa có video nào</h3>
+    <p class="text-muted">Hãy là người đầu tiên upload video!</p>
+    <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
+        <i class="fas fa-upload"></i> Upload Video Đầu Tiên
+    </a>
+</div>
+{% endif %}
+
+<!-- Loading indicator -->
+<div id="loadingIndicator" class="text-center d-none">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Đang tải...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const videoItems = document.querySelectorAll('.video-item');
+    
+    videoItems.forEach(item => {
+        const title = item.dataset.title;
+        const uploader = item.dataset.uploader;
+        
+        if (title.includes(searchTerm) || uploader.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Enter key search
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('searchBtn').click();
+    }
+});
+
+// Auto-refresh stats every 30 seconds
+setInterval(() => {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stats-display').innerHTML = `
+                <i class="fas fa-chart-bar"></i> 
+                ${data.total_videos} videos | 
+                ${data.total_views} views | 
+                ${data.total_size_mb} MB
+            `;
+        })
+        .catch(error => console.error('Error refreshing stats:', error));
+}, 30000);
+</script>
+{% endblock %}

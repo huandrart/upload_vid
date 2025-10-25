@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Video Sharing Platform{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .video-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #ff6b6b !important;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .upload-zone {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s;
+        }
+        .upload-zone:hover {
+            background: #e9ecef;
+        }
+        footer {
+            background: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-video"></i> VideoShare
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> Trang chủ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_page') }}">
+                            <i class="fas fa-upload"></i> Upload Video
+                        </a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <div class="nav-item">
+                        <span class="nav-link" id="stats-display">
+                            <i class="fas fa-chart-bar"></i> Đang tải...
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-video"></i> VideoShare Platform</h5>
+                    <p>Nền tảng chia sẻ video đơn giản và dễ sử dụng</p>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-info-circle"></i> Thông tin</h5>
+                    <p>Được phát triển bằng Flask & Bootstrap</p>
+                    <p>© 2025 VideoShare. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load thống kê
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('stats-display').innerHTML = `
+                    <i class="fas fa-chart-bar"></i> 
+                    ${data.total_videos} videos | 
+                    ${data.total_views} views | 
+                    ${data.total_size_mb} MB
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading stats:', error);
+            });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
